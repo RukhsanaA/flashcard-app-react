@@ -1,0 +1,172 @@
+import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { v4 as uuidv4 } from 'uuid';
+
+const cardsData = [
+  { id: uuidv4(), front: 'What is the capital of France?', back: 'Paris' },
+  { id: uuidv4(), front: 'Who wrote "To Kill a Mockingbird"?', back: 'Harper Lee' },
+  { id: uuidv4(), front: 'What is the chemical symbol for gold?', back: 'Au' },
+  { id: uuidv4(), front: 'Which planet is known as the Red Planet?', back: 'Mars' },
+];
+
+// Main App component
+const App = () => {
+  // State for the flashcards
+  const [cards, setCards] = useState(cardsData);
+  // State for the current card index
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  // State to track if the card is flipped
+  const [isFlipped, setIsFlipped] = useState(false);
+  // State for new card input
+  const [newCardFront, setNewCardFront] = useState('');
+  const [newCardBack, setNewCardBack] = useState('');
+
+  // Effect to reset flipped state when card index changes
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [currentCardIndex]);
+
+  // Function to go to the next card
+  const nextCard = () => {
+    setCurrentCardIndex((prevIndex) => (prevIndex + 1) % cards.length);
+  };
+
+  // Function to go to the previous card
+  const prevCard = () => {
+    setCurrentCardIndex((prevIndex) => (prevIndex - 1 + cards.length) % cards.length);
+  };
+
+  // Function to flip the current card
+  const flipCard = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  // Function to add a new card
+  const addCard = (e) => {
+    e.preventDefault();
+    if (newCardFront.trim() === '' || newCardBack.trim() === '') {
+      return;
+    }
+    const newCard = { id: uuidv4(), front: newCardFront, back: newCardBack };
+    setCards([...cards, newCard]);
+    setNewCardFront('');
+    setNewCardBack('');
+  };
+
+  // Function to delete the current card
+  const deleteCard = () => {
+    if (cards.length > 1) {
+      const updatedCards = cards.filter((_, index) => index !== currentCardIndex);
+      setCards(updatedCards);
+      setCurrentCardIndex((prevIndex) => Math.min(prevIndex, updatedCards.length - 1));
+    } else {
+      setCards([]);
+      setCurrentCardIndex(0);
+    }
+  };
+
+  // Variants for the card flip animation
+  const cardVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } },
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.5 } },
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 font-inter flex flex-col items-center justify-center">
+      <div className="w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center mb-6">Flashcard App</h1>
+        <div className="relative w-full h-80 perspective-1000 mb-6">
+          <AnimatePresence mode="wait">
+            {cards.length > 0 && (
+              <motion.div
+                key={cards[currentCardIndex].id}
+                className="absolute w-full h-full cursor-pointer"
+                onClick={flipCard}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div
+                  className={`absolute w-full h-full rounded-2xl shadow-xl transition-transform duration-700 ease-in-out transform-style-3d ${
+                    isFlipped ? 'rotate-y-180' : ''
+                  }`}
+                >
+                  {/* Front of the card */}
+                  <div className="absolute w-full h-full backface-hidden bg-white dark:bg-gray-800 rounded-2xl p-6 flex items-center justify-center text-center text-2xl font-semibold">
+                    {cards[currentCardIndex].front}
+                  </div>
+                  {/* Back of the card */}
+                  <div className="absolute w-full h-full backface-hidden bg-blue-500 text-white rounded-2xl p-6 flex items-center justify-center text-center text-2xl font-semibold rotate-y-180">
+                    {cards[currentCardIndex].back}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {cards.length === 0 && (
+            <div className="absolute w-full h-full rounded-2xl shadow-xl bg-white dark:bg-gray-800 p-6 flex items-center justify-center text-center text-lg font-semibold">
+              No flashcards available. Add a new one below!
+            </div>
+          )}
+        </div>
+
+        {cards.length > 0 && (
+          <div className="flex justify-between items-center w-full mb-6">
+            <button
+              onClick={prevCard}
+              className="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-sm">
+              {currentCardIndex + 1} / {cards.length}
+            </span>
+            <button
+              onClick={nextCard}
+              className="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        <div className="w-full">
+          <form onSubmit={addCard} className="flex flex-col space-y-4 mb-4">
+            <input
+              type="text"
+              value={newCardFront}
+              onChange={(e) => setNewCardFront(e.target.value)}
+              placeholder="Front of the card (e.g., 'Capital of Italy')"
+              className="p-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            />
+            <input
+              type="text"
+              value={newCardBack}
+              onChange={(e) => setNewCardBack(e.target.value)}
+              placeholder="Back of the card (e.g., 'Rome')"
+              className="p-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            />
+            <button
+              type="submit"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-colors"
+            >
+              Add Card
+            </button>
+          </form>
+          {cards.length > 0 && (
+            <button
+              onClick={deleteCard}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-colors"
+            >
+              Delete Current Card
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
